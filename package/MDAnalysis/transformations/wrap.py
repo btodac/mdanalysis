@@ -34,7 +34,7 @@ atoms of each molecule so that bons don't split over images.
 
 """
 
-from ..lib._cutil import make_whole
+from ..lib.mdamath import make_whole
 
 from .base import TransformationBase
 
