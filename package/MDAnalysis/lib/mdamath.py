@@ -61,8 +61,9 @@ import numpy as np
 
 from ..exceptions import NoDataError
 from . import util
-from ._cutil import (make_whole, find_fragments, _sarrus_det_single,
+from ._cutil import (find_fragments, _sarrus_det_single,
                      _sarrus_det_multiple)
+from .moveatoms import make_whole
 
 # geometric functions
 
