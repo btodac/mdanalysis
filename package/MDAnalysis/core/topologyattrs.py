@@ -46,8 +46,7 @@ import Bio.Seq
 import Bio.SeqRecord
 import numpy as np
 
-from ..lib.util import (cached, convert_aa_code, iterable, warn_if_not_unique,
-                        unique_int_1d)
+from ..lib.util import (cached, convert_aa_code, iterable, warn_if_not_unique)
 from ..lib import transformations, mdamath
 from ..exceptions import NoDataError, SelectionError
 from .topologyobjects import TopologyGroup
@@ -2558,7 +2557,7 @@ class Bonds(_Connection):
 
         .. versionadded:: 0.20.0
         """
-        return len(unique_int_1d(self.fragindices))
+        return len(np.unique(self.fragindices))
 
     transplants[Atom].append(
         ('fragment', property(fragment, None, None,

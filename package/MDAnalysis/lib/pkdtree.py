@@ -32,7 +32,6 @@ import itertools
 import numpy as np
 from scipy.spatial import cKDTree
 
-from ._cutil import unique_int_1d
 from ._augment import augment_coordinates, undo_augment
 from .util import unique_rows
 
@@ -199,7 +198,7 @@ class PeriodicKDTree(object):
             self._indices = np.array(list(
                                      itertools.chain.from_iterable(indices)),
                                      dtype=np.intp)
-        self._indices = np.asarray(unique_int_1d(self._indices))
+        self._indices = np.asarray(np.unique(self._indices))
         return self._indices
 
     def get_indices(self):

@@ -49,7 +49,6 @@ import warnings
 import numpy as np
 
 
-from ..lib.util import unique_int_1d
 from ..lib import distances
 from ..exceptions import SelectionError, NoDataError, SelectionWarning
 
@@ -291,7 +290,7 @@ class ByResSelection(UnarySelection):
 
     def _apply(self, group):
         res = self.sel.apply(group)
-        unique_res = unique_int_1d(res.resindices)
+        unique_res = np.unique(res.resindices)
         mask = np.in1d(group.resindices, unique_res)
 
         return group[mask]

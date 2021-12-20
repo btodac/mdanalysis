@@ -30,8 +30,6 @@ This module contains classes that allow neighbor searches directly with
 """
 import numpy as np
 from MDAnalysis.lib.distances import capped_distance
-from MDAnalysis.lib.util import unique_int_1d
-
 
 class AtomNeighborSearch(object):
     """This class can be used to find all atoms/residues/segments within the
@@ -99,7 +97,7 @@ class AtomNeighborSearch(object):
                                 radius, box=self._box, return_distances=False)
 
         if pairs.size > 0:
-            unique_idx = unique_int_1d(np.asarray(pairs[:, 1], dtype=np.intp))
+            unique_idx = np.unique(np.asarray(pairs[:, 1], dtype=np.intp))
         return self._index2level(unique_idx, level)
 
     def _index2level(self, indices, level):

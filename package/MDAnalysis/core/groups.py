@@ -101,7 +101,7 @@ from .. import (_CONVERTERS,
                 _TOPOLOGY_ATTRS, _TOPOLOGY_TRANSPLANTS, _TOPOLOGY_ATTRNAMES)
 from ..lib import util
 from ..lib.util import (cached, warn_if_not_unique,
-                        unique_int_1d, unique_int_1d_unsorted,
+                        unique_int_1d_unsorted,
                         int_array_is_sorted
                         )
 from ..lib import distances
@@ -772,7 +772,7 @@ class GroupBase(_MutableBase):
         """
         if len(self) <= 1:
             return True
-        return unique_int_1d(self.ix).shape[0] == self.ix.shape[0]
+        return np.unique(self.ix).shape[0] == self.ix.shape[0]
 
     def _asunique(self, group, sorted=False, set_mask=False):
         try:
@@ -796,7 +796,7 @@ class GroupBase(_MutableBase):
                     self.ix, return_inverse=True)
                 self._unique_restore_mask = restore_mask
             else:
-                unique_ix = unique_int_1d(self.ix)
+                unique_ix = np.unique(self.ix)
 
             _unique = group[unique_ix]
             _unique._cache['isunique'] = True
@@ -918,7 +918,7 @@ class GroupBase(_MutableBase):
         compound_sizes = np.bincount(compound_indices)
         size_per_atom = compound_sizes[compound_indices]
         compound_sizes = compound_sizes[compound_sizes != 0]
-        unique_compound_sizes = unique_int_1d(compound_sizes)
+        unique_compound_sizes = np.unique(compound_sizes)
 
         # Are we already sorted? argsorting and fancy-indexing can be expensive
         # so we do a quick pre-check.
@@ -1700,7 +1700,7 @@ class GroupBase(_MutableBase):
                 compound_indices = atoms._get_compound_indices(comp)
 
                 # apply the shifts:
-                unique_compound_indices = unique_int_1d(compound_indices)
+                unique_compound_indices = np.unique(compound_indices)
                 shift_idx = 0
                 for i in unique_compound_indices:
                     mask = np.where(compound_indices == i)
@@ -2531,7 +2531,7 @@ class AtomGroup(GroupBase):
         """A sorted :class:`ResidueGroup` of the unique
         :class:`Residues<Residue>` present in the :class:`AtomGroup`.
         """
-        rg = self.universe.residues[unique_int_1d(self.resindices)]
+        rg = self.universe.residues[np.unique(self.resindices)]
         rg._cache['isunique'] = True
         rg._cache['issorted'] = True
         rg._cache['sorted_unique'] = rg
@@ -2580,7 +2580,7 @@ class AtomGroup(GroupBase):
         """A sorted :class:`SegmentGroup` of the unique segments present in the
         :class:`AtomGroup`.
         """
-        sg = self.universe.segments[unique_int_1d(self.segindices)]
+        sg = self.universe.segments[np.unique(self.segindices)]
         sg._cache['isunique'] = True
         sg._cache['issorted'] = True
         sg._cache['sorted_unique'] = sg
@@ -3189,7 +3189,7 @@ class AtomGroup(GroupBase):
             raise ValueError(errmsg) from None
 
         return [self[levelindices == index] for index in
-                unique_int_1d(levelindices)]
+                np.unique(levelindices)]
 
     def guess_bonds(self, vdwradii=None):
         """Guess bonds that exist within this :class:`AtomGroup` and add them to
@@ -3635,7 +3635,7 @@ class ResidueGroup(GroupBase):
         """Get sorted :class:`SegmentGroup` of the unique segments present in
         the :class:`ResidueGroup`.
         """
-        sg = self.universe.segments[unique_int_1d(self.segindices)]
+        sg = self.universe.segments[np.unique(self.segindices)]
         sg._cache['isunique'] = True
         sg._cache['issorted'] = True
         sg._cache['sorted_unique'] = sg

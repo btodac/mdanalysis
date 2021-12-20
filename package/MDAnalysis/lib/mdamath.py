@@ -194,7 +194,7 @@ def dihedral(ab, bc, cd):
     x = angle(normal(ab, bc), normal(bc, cd))
     return (x if stp(ab, bc, cd) <= 0.0 else -x)
 
-
+'''
 def sarrus_det(matrix):
     """Computes the determinant of a 3x3 matrix according to the
     `rule of Sarrus`_.
@@ -238,7 +238,7 @@ def sarrus_det(matrix):
     if ndim == 2:
         return _sarrus_det_single(m)
     return _sarrus_det_multiple(m.reshape((-1, 3, 3))).reshape(shape[:-2])
-
+'''
 
 def triclinic_box(x, y, z):
     """Convert the three triclinic box vectors to

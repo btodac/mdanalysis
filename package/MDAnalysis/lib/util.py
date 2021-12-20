@@ -213,13 +213,6 @@ import inspect
 from .picklable_file_io import pickle_open, bz2_pickle_open, gzip_pickle_open
 
 from ..exceptions import StreamWarning, DuplicateWarning
-try:
-    from ._cutil import unique_int_1d
-except ImportError:
-    raise ImportError("MDAnalysis not installed properly. "
-                      "This can happen if your C extensions "
-                      "have not been built.")
-
 
 def int_array_is_sorted(array):
     mask = array[:-1] <= array[1:]

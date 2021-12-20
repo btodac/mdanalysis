@@ -20,24 +20,22 @@
 # MDAnalysis: A Toolkit for the Analysis of Molecular Dynamics Simulations.
 # J. Comput. Chem. 32 (2011), 2319--2327, doi:10.1002/jcc.21787
 #
-#
+# NOTE: This file authored by Mat Tolladay 26/11/2021 as part of de-cython
 
-import cython
+#import cython
 import numpy as np
 from .mdamath import triclinic_vectors
-cimport numpy as np
-cimport MDAnalysis.lib._cutil
-from MDAnalysis.lib._cutil cimport _dot ,_norm, _cross
+#cimport numpy as np
+#cimport MDAnalysis.lib._cutil
+#from MDAnalysis.lib._cutil cimport _dot ,_norm, _cross
 
-from libcpp.vector cimport vector
+#from libcpp.vector cimport vector
 
 
 __all__ = ['augment_coordinates', 'undo_augment']
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def augment_coordinates(float[:, ::1] coordinates, float[:] box, float r):
+def augment_coordinates(coordinates, box, r):
     r"""Calculates the periodic images of particles which are within a distance
     `r` from the box walls.
 
@@ -83,6 +81,7 @@ def augment_coordinates(float[:, ::1] coordinates, float[:] box, float r):
       ``[lx, ly, lz, alpha, beta, gamma]``
     r : float
       Thickness of cutoff region for duplicate image generation.
+      THIS IS ASSUMED TO BE LESS THAN 0.5*SHORTEST TRICLINIC VECTOR LENGTH
 
     Returns
     -------
@@ -110,8 +109,42 @@ def augment_coordinates(float[:, ::1] coordinates, float[:] box, float r):
     :meth:`undo_augment`
 
 
-    .. versionadded:: 0.19.0
+    .. versionadded:: Testversion
     """
+
+
+    # REQUIRED NUMPY CODE
+    dm = triclinic_vectors(box)
+    reciprocal = np.cross(dm[[1,2,0]], dm[[2,0,1]], axis=1)
+    reciprocal /= np.linalg.norm(reciprocal, axis=1)[:,np.newaxis]
+    other = np.sum(dm, axis=0) - coordinates
+
+    lo = np.einsum('ij,ikj->ik', coordinates, reciprocal[np.newaxis])
+    hi = np.einsum('ij,ikj->ik', other, reciprocal[np.newaxis])
+    shifts = (lo<=r).astype(int) - (hi<=r).astype(int) # array of 1, 0 and -1
+    # atom images can be at a face ([1 0 0]) and edge ([1 1 0]) and a corner 
+    # ([1 1 1]) (or with negative 1). That is: there can be up to six images 
+    # to include for each atom
+    def make_images(shift_type):
+        is_shifted = np.all(shifts[:,shift_type]!=0, axis=1)
+        x = coordinates[is_shifted,:]
+        for s in shift_type:
+            x += shifts[is_shifted,np.newaxis,s] * dm[np.newaxis,s,:]
+        return x, np.where(is_shifted)
+    
+    components = [[0],[1],[2],[0,1],[0,2],[1,2],[0,1,2]]
+    image_coordinates = []
+    image_indices = []
+    for c in components:
+        image_coordinates, image_indices = make_images(c)
+        
+    return np.concatenate(image_coordinates, dtype=np.float32), \
+        np.concatenate(image_indices,dtype=np.intp)
+        
+    
+    
+    # REPLACE BELOW HERE
+    '''
     cdef bint lo_x, hi_x, lo_y, hi_y, lo_z, hi_z
     cdef int i, j, N
     cdef float norm
@@ -123,8 +156,6 @@ def augment_coordinates(float[:, ::1] coordinates, float[:] box, float r):
     cdef float other[3]
     cdef float dm[3][3]
     cdef float reciprocal[3][3]
-
-    dm = triclinic_vectors(box)
     
     for i in range(3):
         shiftX[i] = dm[0][i]
@@ -143,10 +174,11 @@ def augment_coordinates(float[:, ::1] coordinates, float[:] box, float r):
 
     N = coordinates.shape[0]
 
-    cdef vector[float] output
+# May be slow without initialisation giving number of elements
+    cdef vector[float] output 
     cdef vector[int] indices
 
-    for i in range(N):
+    for i in range(N): # Looping over atoms is always bad...
         for j in range(3):
             coord[j] = coordinates[i, j]
             other[j] = end[j] - coordinates[i, j]
@@ -162,7 +194,9 @@ def augment_coordinates(float[:, ::1] coordinates, float[:] box, float r):
             # if X, face piece
             for j in range(3):
                 # add to output
-                output.push_back(coord[j] + shiftX[j])
+                # push_back will results in vectors resizing i.e. lots of 
+                # copying to find sufficiently large contiguous memory!
+                output.push_back(coord[j] + shiftX[j]) 
             # keep record of which index this augmented
             # position was created from
             indices.push_back(i)
@@ -295,11 +329,8 @@ def augment_coordinates(float[:, ::1] coordinates, float[:] box, float r):
             indices.push_back(i)
     n = indices.size()
     return np.asarray(output, dtype=np.float32).reshape(n, 3), np.asarray(indices, dtype=np.intp)
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def undo_augment(np.intp_t[:] results, np.intp_t[:] translation, int nreal):
+'''
+def undo_augment(results, translation, n_real):
     """Translate augmented indices back to original indices.
 
     Parameters
@@ -330,8 +361,17 @@ def undo_augment(np.intp_t[:] results, np.intp_t[:] translation, int nreal):
     :meth:`augment_coordinates`
 
 
-    .. versionadded:: 0.19.0
+    .. versionadded:: TestVersion
     """
+    is_augment = results >= n_real
+    indx = results[is_augment]
+    results[is_augment] = translation[indx - n_real]
+    return results
+'''    
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def undo_augment(np.intp_t[:] results, np.intp_t[:] translation, int nreal):
+    
     cdef int N
     cdef ssize_t i
     N = results.shape[0]
@@ -340,3 +380,4 @@ def undo_augment(np.intp_t[:] results, np.intp_t[:] translation, int nreal):
         if results[i] >= nreal:
             results[i] = translation[results[i] - nreal]
     return np.asarray(results, dtype=np.intp)
+'''
